@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MultiView and Single Item Select</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="scatter_plot.js?2"></script>
+
+    <style>
+        .fig{
+            fill: #faf8f8;
+        }
+        table{
+            border: 1px solid #d2bcbc;
+            border-collapse: collapse;
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+<div class='row'><h2>MultiView and Single Item Select</h2></div>
+
+<div id="fig"></div>
+<script>
+    let palmer_penguin_species = "palmer_penguin_species.tsv";
+
+    let figure = d3.select("#fig")
+    let w = 1000;
+
+    d3.tsv(palmer_penguin_species).then(main)
+
+    function subplots(figure, n, m) {
+        let axis = {}
+        for (let i=0;i<m;i++) {
+            for(let j=0;j<n;j++)
+            {
+                axis[`svg_${i}_${j}`] = figure.append("svg")
+                    .attr("id", `svg_${i}_${j}`)
+                    .attr("viewBox", function () {
+                        return "0 0 1000 1000"
+                    })
+                    .attr("width", parseInt(w/m))
+                    .attr("height", parseInt(w/m))
+                    .append("g").attr("id", `g_${i}_${j}`)
+                axis[`svg_${i}_${j}`]
+                    .append("rect").attr('x', "0").attr('y', "0")
+                    .attr("width", 1000-50)
+                    .attr("height", 1000-50)
+                    .attr("fill", "#D0C6F9")
+            }
+        }
+        return axis
+    }
+
+
+    function main(data) {
+        let species = d3.map(data, function (d) {
+            return d.species
+        })
+        let species_types = new Set(species)
+
+        let species_code = d3.map(data, function (d) {
+            species = d.species
+            if (species === "Adelie") {
+                return 0
+            } else if (species === "Gentoo") {
+                return 1
+            } else {
+                return 2
+            }
+        })
+
+        let dict = {}
+        d3.map(data, function (d) {
+            if (dict[d["species"]] === undefined) {
+                dict[d["species"]] = {"culmen_length_mm": [], "culmen_depth_mm": []}
+            }
+            dict[d["species"]]["culmen_length_mm"].push(+d["culmen_length_mm"])
+            dict[d["species"]]["culmen_depth_mm"].push(+d["culmen_depth_mm"])
+
+        })
+        let axis = Object.keys(subplots(figure, 1, 3))
+
+        d3.map(species_types, function (d, i) {
+            scatter_plot(dict[d]['culmen_length_mm'],
+                dict[d]['culmen_depth_mm'],
+                10,
+                species_code,
+                axis[i],
+                d)
+        })
+
+    }
+</script>
+</body>
+</html>
